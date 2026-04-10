@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import threading
 import time
-from flask_login import login_required, LoginManager, UserMixin
+from flask_login import login_required, login_user, logout_user, LoginManager, UserMixin
 
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
@@ -39,7 +39,7 @@ _scheduler_started = False
 def create_app() -> Flask:
     app = Flask(__name__)
     login_manager.init_app(app)
-    # login_manager.login_view = 'login'  # Opcional
+    login_manager.login_view = 'login'
 
     settings = load_settings()
 
@@ -156,6 +156,7 @@ def create_app() -> Flask:
 
             if username == settings.admin_username and password == settings.admin_password:
                 session["authenticated"] = True
+                login_user(User(username))
                 return redirect(url_for("dashboard"))
 
             error = "Usuario ou senha invalidos"
@@ -165,6 +166,7 @@ def create_app() -> Flask:
 
     @app.route("/logout", methods=["GET"])
     def logout():
+        logout_user()
         session.clear()
         return redirect(url_for("login"))
 
