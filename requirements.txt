@@ -1,0 +1,7 @@
+flask
+gunicorn
+requests
+gspread
+psycopg2-binary
+python-dotenv
+flask_login

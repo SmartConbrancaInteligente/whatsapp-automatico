@@ -1,0 +1,126 @@
+:root {
+    --bg: #0e151b;
+    --card: #132028;
+    --card-soft: #1a2b35;
+    --text: #f2f7fb;
+    --muted: #b4c7d4;
+    --line: #2f4350;
+    --accent: #16a085;
+    --danger: #ffd1d1;
+    --danger-bg: #4b1b1b;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    font-family: "Manrope", sans-serif;
+    color: var(--text);
+    background: radial-gradient(circle at 20% 20%, #1e2f3a 0%, transparent 35%),
+                radial-gradient(circle at 80% 80%, #15423d 0%, transparent 40%),
+                var(--bg);
+    overflow: hidden;
+}
+
+.aurora {
+    position: fixed;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.35;
+}
+
+.aurora-a {
+    background: #1abc9c;
+    top: -70px;
+    right: -30px;
+}
+
+.aurora-b {
+    background: #3498db;
+    bottom: -90px;
+    left: -60px;
+}
+
+.login-wrap {
+    width: 100%;
+    padding: 16px;
+}
+
+.login-card {
+    width: min(430px, 100%);
+    margin: 0 auto;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 24px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+}
+
+.login-card h1 {
+    margin: 0;
+    font-size: 1.9rem;
+}
+
+.login-card p {
+    margin: 8px 0 18px;
+    color: var(--muted);
+}
+
+.alert {
+    margin-bottom: 12px;
+    border-radius: 10px;
+    padding: 10px;
+    color: var(--danger);
+    background: var(--danger-bg);
+    font-weight: 600;
+}
+
+form {
+    display: grid;
+    gap: 10px;
+}
+
+label {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+input {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card-soft);
+    color: var(--text);
+    padding: 11px 12px;
+    font-size: 0.96rem;
+}
+
+input:focus {
+    outline: 2px solid rgba(22, 160, 133, 0.35);
+    border-color: var(--accent);
+}
+
+button {
+    margin-top: 8px;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+}

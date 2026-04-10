@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel de Pagamentos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/dashboard.css" />
+</head>
+<body>
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+
+    <main class="container">
+        <header class="header">
+            <div>
+                <h1>Painel de Controle</h1>
+                <p>Monitoramento de clientes e cobrancas em tempo real</p>
+            </div>
+            <div class="header-actions">
+                <button id="refreshBtn">Atualizar</button>
+                <a class="logout-btn" href="/logout">Sair</a>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="clientes">Clientes</button>
+            <button class="tab-btn" data-tab="cobrancas">Cobrancas</button>
+            <button class="tab-btn" data-tab="disparos">Disparos</button>
+        </nav>
+
+        <section id="clientes-tab" class="tab-content active">
+        <section class="admin-panel">
+            <div class="admin-panel-head">
+                <div>
+                    <h2 id="clientFormTitle">Adicionar cliente</h2>
+                    <p>Cadastre clientes no banco, edite vencimentos e sincronize pagamentos antigos do Mercado Pago.</p>
+                </div>
+                <div class="sync-controls">
+                    <label for="syncLimit">Ultimos pagamentos</label>
+                    <input id="syncLimit" type="number" min="1" max="100" value="100" />
+                    <button id="syncPaymentsBtn" type="button">Sincronizar pagos</button>
+                </div>
+            </div>
+
+            <form id="clienteForm" class="client-form">
+                <label>
+                    <span>Nome</span>
+                    <input id="clienteNome" type="text" placeholder="Nome do cliente" required />
+                </label>
+                <label>
+                    <span>Login</span>
+                    <input id="clienteLogin" type="text" placeholder="login do cliente (opcional)" />
+                </label>
+                <label>
+                    <span>Telefone</span>
+                    <input id="clienteNumero" type="text" placeholder="5541999999999" required />
+                </label>
+                <label>
+                    <span>Vencimento</span>
+                    <input id="clienteVencimento" type="text" placeholder="dd/mm/aaaa" required />
+                </label>
+                <div class="form-actions">
+                    <button id="saveClientBtn" type="submit">Salvar cliente</button>
+                    <button id="cancelEditBtn" class="secondary-btn hidden" type="button">Cancelar</button>
+                </div>
+            </form>
+
+            <p id="statusMessage" class="status-message hidden"></p>
+        </section>
+
+        <section class="cards">
+            <article class="card">
+                <span>Total de clientes</span>
+                <strong id="totalClientes">0</strong>
+            </article>
+            <article class="card success">
+                <span>Pagos</span>
+                <strong id="totalPagos">0</strong>
+            </article>
+            <article class="card danger">
+                <span>Não pagos</span>
+                <strong id="totalNaoPagos">0</strong>
+            </article>
+            <article class="card money">
+                <span>Saldo recebido</span>
+                <strong id="saldoRecebido">R$ 0,00</strong>
+            </article>
+            <article class="card money danger-money">
+                <span>Saldo pendente</span>
+                <strong id="saldoPendente">R$ 0,00</strong>
+            </article>
+            <article class="card money">
+                <span>Saldo líquido</span>
+                <strong id="saldoLiquido">R$ 0,00</strong>
+            </article>
+        </section>
+
+        <section class="client-search-wrap">
+            <div class="client-filters-head">
+                <label for="clientSearchInput">Buscar e filtrar clientes</label>
+                <button id="clearClientFiltersBtn" class="secondary-btn" type="button">Limpar filtros</button>
+            </div>
+            <div class="client-filters-grid">
+                <input id="clientSearchInput" type="text" placeholder="Digite nome ou telefone" />
+                <input id="clientDateFrom" type="date" />
+                <input id="clientDateTo" type="date" />
+            </div>
+        </section>
+
+        <section class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Login</th>
+                        <th>Telefone</th>
+                        <th>Vencimento</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="clientesTbody"></tbody>
+            </table>
+            <p id="emptyState" class="empty hidden">Nenhum cliente encontrado.</p>
+        </section>
+        </section>
+
+        <section id="cobrancas-tab" class="tab-content">
+            <div class="cobrancas-controls">
+                <div class="cobrancas-filter">
+                    <button class="filter-btn active" data-filter="all">Todas</button>
+                    <button class="filter-btn" data-filter="pending">Pendentes</button>
+                    <button class="filter-btn" data-filter="approved">Aprovadas</button>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Codigo</th>
+                            <th>Cliente</th>
+                            <th>Numero</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Criada em</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cobrancasTbody"></tbody>
+                </table>
+                <p id="emptyCobrancas" class="empty hidden">Nenhuma cobranca encontrada.</p>
+            </div>
+        </section>
+
+        <section id="disparos-tab" class="tab-content">
+            <section class="admin-panel">
+                <div class="admin-panel-head">
+                    <div>
+                        <h2>Disparos automaticos</h2>
+                        <p>Configure ate 3 horarios diarios e envie cobrancas manuais apenas para clientes em atraso e nao pagos.</p>
+                    </div>
+                </div>
+
+                <form id="dispatchConfigForm" class="dispatch-form">
+                    <label class="toggle-field">
+                        <span>Habilitar scheduler interno</span>
+                        <input id="dispatchEnabled" type="checkbox" />
+                    </label>
+                    <label>
+                        <span>Horario 1</span>
+                        <input id="dispatchTime1" type="time" required />
+                    </label>
+                    <label>
+                        <span>Horario 2</span>
+                        <input id="dispatchTime2" type="time" required />
+                    </label>
+                    <label>
+                        <span>Horario 3</span>
+                        <input id="dispatchTime3" type="time" required />
+                    </label>
+                    <div class="form-actions">
+                        <button id="saveDispatchConfigBtn" type="submit">Salvar horarios</button>
+                    </div>
+                </form>
+
+                <div class="manual-dispatch-actions">
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-weight: 500;">
+                                <input type="checkbox" id="earlyPaymentCheckbox" /> Enviar como pagamento adiantado (mensagem personalizada)
+                            </label>
+                        </div>
+                    <button id="sendSelectedBtn" type="button">Enviar selecionados</button>
+                    <button id="sendAllOverdueBtn" class="secondary-btn" type="button">Enviar todos em atraso</button>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input id="selectAllOverdue" type="checkbox" /></th>
+                                <th>Cliente</th>
+                                <th>Telefone</th>
+                                <th>Vencimento</th>
+                                <th>Dias atraso</th>
+                                <th>Origem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overdueClientsTbody"></tbody>
+                    </table>
+                    <p id="emptyOverdueClients" class="empty hidden">Nenhum cliente em atraso.</p>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Slot</th>
+                                <th>Executado em</th>
+                                <th>Total enviado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dispatchRunsTbody"></tbody>
+                    </table>
+                    <p id="emptyDispatchRuns" class="empty hidden">Nenhum disparo automatico registrado.</p>
+                </div>
+            </section>
+
+            <!-- Bloco de envio manual de link de pagamento removido conforme solicitado -->
+        </section>
+    </main>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
