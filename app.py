@@ -329,25 +329,7 @@ def create_app() -> Flask:
         if not result["ok"]:
             return jsonify({"erro": result["message"]}), result["status_code"]
 
-        if result.get("status") == "approved":
-            target_number = numero_atual or number
-            try:
-                payment_link = getattr(settings, 'payment_link', 'https://link.mercadopago.com.br/assinaturatvrodrigo')
-                zapi_client.send_text(
-                    target_number,
-                    "🤖Mensagem automatica\n\n"
-                    f"Olá, {nome} 👋\n\n"
-                    f"📅 Seu plano vence em {vencimento}.\n\n"
-                    "Segue os dados para pagamentos:\n"
-                    "Nome: Rodrigo Batista dos Santos\n"
-                    "Banco: Mercado Pago\n\n"
-                    "Para renovar, utilize:\n"
-                    f"🔗 Link de pagamento: {payment_link}\n\n"
-                    "Caso ja tenha pago, Desconsidere a mensagem.\n"
-                    "Qualquer dúvida, estamos à disposição! 😊"
-                )
-            except Exception:
-                logger.warning("Falha ao enviar confirmacao de pagamento para %s", target_number)
+        # Mensagem de confirmação já é enviada por set_manual_payment_status quando status == 'approved'.
 
         return jsonify({"status": "ok", "pagamento": result["status"]}), 200
 
