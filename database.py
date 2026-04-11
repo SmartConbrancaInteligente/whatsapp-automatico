@@ -15,26 +15,26 @@ except ImportError:
 
 
 class DatabaseRepository:
-        def migrate_add_data_iso(self):
-            """Adiciona a coluna data_iso em pagamentos se não existir e preenche registros antigos."""
-            if not self.is_postgres:
-                return  # Só precisa para PostgreSQL
-            with self._connect() as conn:
-                cursor = conn.cursor()
-                # Verifica se a coluna já existe
+    def migrate_add_data_iso(self):
+        """Adiciona a coluna data_iso em pagamentos se não existir e preenche registros antigos."""
+        if not self.is_postgres:
+            return  # Só precisa para PostgreSQL
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            # Verifica se a coluna já existe
+            cursor.execute("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'pagamentos' AND column_name = 'data_iso'
+            """)
+            if cursor.fetchone() is None:
+                # Cria a coluna
+                cursor.execute("ALTER TABLE pagamentos ADD COLUMN data_iso TEXT;")
+                # Preenche registros antigos
                 cursor.execute("""
-                    SELECT column_name FROM information_schema.columns
-                    WHERE table_name = 'pagamentos' AND column_name = 'data_iso'
+                    UPDATE pagamentos SET data_iso = TO_CHAR(TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')
+                    WHERE data IS NOT NULL AND (data_iso IS NULL OR data_iso = '');
                 """)
-                if cursor.fetchone() is None:
-                    # Cria a coluna
-                    cursor.execute("ALTER TABLE pagamentos ADD COLUMN data_iso TEXT;")
-                    # Preenche registros antigos
-                    cursor.execute("""
-                        UPDATE pagamentos SET data_iso = TO_CHAR(TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')
-                        WHERE data IS NOT NULL AND (data_iso IS NULL OR data_iso = '');
-                    """)
-                    conn.commit()
+                conn.commit()
     def __init__(self, database_url: str = "", db_path: str = "controle.db") -> None:
         self.database_url = database_url
         self.db_path = db_path
