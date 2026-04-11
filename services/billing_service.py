@@ -192,7 +192,7 @@ class BillingService:
             vencimento = update_result.get("new_due_date") or ""
             mensagem = (
                 f"Olá, *{first_name}*! 🎉\n\n"
-                f"✅ Seu pagamento de R$ {valor_pago_str} foi confirmado com sucesso!\n\n"
+                f"✅ Seu pagamento foi confirmado com sucesso!\n\n"
                 "Muito obrigado por continuar com a gente. Seu acesso será liberado em instantes.\n\n"
                 f"📅 Novo vencimento: *{vencimento}*\n\n"
                 "Qualquer dúvida, estamos à disposição. 😊"

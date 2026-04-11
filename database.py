@@ -683,7 +683,7 @@ class DatabaseRepository:
     def get_hidden_client_numbers(self) -> set[str]:
         with self._connect() as conn:
             cursor = conn.cursor()
-            self._execute(cursor, "SELECT numero FROM clientes_ocultos")
+            self._execute(cursor, "SELECT numero FROM clientes_ocultos", ())
             rows = cursor.fetchall()
             return {str(row[0] or "") for row in rows}
 
