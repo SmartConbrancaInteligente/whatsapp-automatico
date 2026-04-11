@@ -15,6 +15,26 @@ except ImportError:
 
 
 class DatabaseRepository:
+        def migrate_add_data_iso(self):
+            """Adiciona a coluna data_iso em pagamentos se não existir e preenche registros antigos."""
+            if not self.is_postgres:
+                return  # Só precisa para PostgreSQL
+            with self._connect() as conn:
+                cursor = conn.cursor()
+                # Verifica se a coluna já existe
+                cursor.execute("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'pagamentos' AND column_name = 'data_iso'
+                """)
+                if cursor.fetchone() is None:
+                    # Cria a coluna
+                    cursor.execute("ALTER TABLE pagamentos ADD COLUMN data_iso TEXT;")
+                    # Preenche registros antigos
+                    cursor.execute("""
+                        UPDATE pagamentos SET data_iso = TO_CHAR(TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')
+                        WHERE data IS NOT NULL AND (data_iso IS NULL OR data_iso = '');
+                    """)
+                    conn.commit()
     def __init__(self, database_url: str = "", db_path: str = "controle.db") -> None:
         self.database_url = database_url
         self.db_path = db_path
@@ -76,220 +96,14 @@ class DatabaseRepository:
     def init_schema(self) -> None:
         with self._connect() as conn:
             cursor = conn.cursor()
-            
             if self.is_postgres:
                 # PostgreSQL schema
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS interacoes (
-                        numero TEXT,
-                        data TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS pagamentos (
-                        payment_id TEXT PRIMARY KEY,
-                        external_reference TEXT,
-                        numero TEXT,
-                        status TEXT,
-                        valor REAL,
-                        data TEXT,
-                        data_iso TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS vencimentos_override (
-                        numero TEXT PRIMARY KEY,
-                        vencimento TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS cobrancas (
-                        external_reference TEXT PRIMARY KEY,
-                        numero TEXT,
-                        nome TEXT,
-                        valor REAL,
-                        status TEXT,
-                        payment_link TEXT,
-                        payment_id TEXT,
-                        criado_em TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS clientes_painel (
-                        numero TEXT PRIMARY KEY,
-                        nome TEXT,
-                        login TEXT,
-                        vencimento TEXT,
-                        criado_em TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS numero_overrides (
-                        numero_original TEXT PRIMARY KEY,
-                        numero_atual TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS dispatch_settings (
-                        id INTEGER PRIMARY KEY CHECK (id = 1),
-                        habilitado INTEGER NOT NULL DEFAULT 0,
-                        horario_1 TEXT NOT NULL DEFAULT '08:00',
-                        horario_2 TEXT NOT NULL DEFAULT '12:00',
-                        horario_3 TEXT NOT NULL DEFAULT '18:00',
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS dispatch_executions (
-                        id SERIAL PRIMARY KEY,
-                        data TEXT NOT NULL,
-                        slot TEXT NOT NULL,
-                        enviados INTEGER NOT NULL DEFAULT 0,
-                        executado_em TEXT,
-                        UNIQUE(data, slot)
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS clientes_ocultos (
-                        numero TEXT PRIMARY KEY,
-                        ocultado_em TEXT
-                    )
-                    """
-                )
-                
-                # Check if login column exists in PostgreSQL
-                cursor.execute(
-                    """
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'clientes_painel' AND column_name = 'login'
-                    """
-                )
-                if cursor.fetchone() is None:
-                    try:
-                        cursor.execute("ALTER TABLE clientes_painel ADD COLUMN login TEXT")
-                    except Exception:
-                        pass
+                # ...existing code...
+                # Após criar as tabelas, roda a migração da coluna data_iso
+                self.migrate_add_data_iso()
             else:
                 # SQLite schema (original)
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS interacoes (
-                        numero TEXT,
-                        data TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS pagamentos (
-                        payment_id TEXT PRIMARY KEY,
-                        external_reference TEXT,
-                        numero TEXT,
-                        status TEXT,
-                        valor REAL,
-                        data TEXT,
-                        data_iso TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS vencimentos_override (
-                        numero TEXT PRIMARY KEY,
-                        vencimento TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS cobrancas (
-                        external_reference TEXT PRIMARY KEY,
-                        numero TEXT,
-                        nome TEXT,
-                        valor REAL,
-                        status TEXT,
-                        payment_link TEXT,
-                        payment_id TEXT,
-                        criado_em TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS clientes_painel (
-                        numero TEXT PRIMARY KEY,
-                        nome TEXT,
-                        login TEXT,
-                        vencimento TEXT,
-                        criado_em TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS numero_overrides (
-                        numero_original TEXT PRIMARY KEY,
-                        numero_atual TEXT,
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS dispatch_settings (
-                        id INTEGER PRIMARY KEY CHECK (id = 1),
-                        habilitado INTEGER NOT NULL DEFAULT 0,
-                        horario_1 TEXT NOT NULL DEFAULT '08:00',
-                        horario_2 TEXT NOT NULL DEFAULT '12:00',
-                        horario_3 TEXT NOT NULL DEFAULT '18:00',
-                        atualizado_em TEXT
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS dispatch_executions (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        data TEXT NOT NULL,
-                        slot TEXT NOT NULL,
-                        enviados INTEGER NOT NULL DEFAULT 0,
-                        executado_em TEXT,
-                        UNIQUE(data, slot)
-                    )
-                    """
-                )
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS clientes_ocultos (
-                        numero TEXT PRIMARY KEY,
-                        ocultado_em TEXT
-                    )
-                    """
-                )
+                # ...existing code...
                 cursor.execute("PRAGMA table_info(clientes_painel)")
                 panel_columns = {str(row[1]) for row in cursor.fetchall()}
                 if "login" not in panel_columns:
