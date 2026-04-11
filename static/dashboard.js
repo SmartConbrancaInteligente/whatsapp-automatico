@@ -203,6 +203,7 @@ function renderClientes() {
         const proximoStatus = status === "pago" ? "pending" : "approved";
         const textoBotaoStatus = status === "pago" ? "Marcar nao pago" : "Marcar pago";
         const originalNumber = cliente.numero_original || cliente.numero || "";
+        const textoStatus = status === "pago" ? "Pago" : "Não pago";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -215,7 +216,10 @@ function renderClientes() {
             <td>${escapeHtml(cliente.login || "-")}</td>
             <td>${escapeHtml(cliente.numero || "-")}</td>
             <td>${escapeHtml(cliente.vencimento || "-")}</td>
-            <td><span class="badge ${status}">${status === "pago" ? "Pago" : "Nao pago"}</span></td>
+            <td>
+                <span class="badge ${status}">${textoStatus}</span>
+                <small class="status-raw">(${escapeHtml(cliente.status_pagamento_raw)})</small>
+            </td>
             <td class="actions-cell">
                 <button class="table-btn" data-action="edit" data-number="${escapeHtml(cliente.numero || "")}">Editar</button>
                 <button class="table-btn payment-toggle ${status}" data-action="toggle-payment" data-number="${escapeHtml(cliente.numero || "")}" data-original="${escapeHtml(originalNumber)}" data-status="${escapeHtml(proximoStatus)}">${escapeHtml(textoBotaoStatus)}</button>
