@@ -332,9 +332,19 @@ def create_app() -> Flask:
         if result.get("status") == "approved":
             target_number = numero_atual or number
             try:
+                payment_link = getattr(settings, 'payment_link', 'https://link.mercadopago.com.br/assinaturatvrodrigo')
                 zapi_client.send_text(
                     target_number,
-                    "Pagamento recebido com sucesso. Sua renovacao sera ativada em instantes.",
+                    "🤖Mensagem automatica\n\n"
+                    f"Olá, {nome} 👋\n\n"
+                    f"📅 Seu plano vence em {vencimento}.\n\n"
+                    "Segue os dados para pagamentos:\n"
+                    "Nome: Rodrigo Batista dos Santos\n"
+                    "Banco: Mercado Pago\n\n"
+                    "Para renovar, utilize:\n"
+                    f"🔗 Link de pagamento: {payment_link}\n\n"
+                    "Caso ja tenha pago, Desconsidere a mensagem.\n"
+                    "Qualquer dúvida, estamos à disposição! 😊"
                 )
             except Exception:
                 logger.warning("Falha ao enviar confirmacao de pagamento para %s", target_number)
@@ -528,12 +538,18 @@ def create_app() -> Flask:
                             valor_pago = p_amount if 'p_amount' in locals() else amount if 'amount' in locals() else ''
                             valor_pago_str = f"{valor_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if valor_pago else ""
                             vencimento = new_due or ""
+                            payment_link = getattr(settings, 'payment_link', 'https://link.mercadopago.com.br/assinaturatvrodrigo')
                             mensagem = (
-                                f"Olá, *{nome}*! 🎉\n\n"
-                                f"✅ Seu pagamento de R$ {valor_pago_str} foi confirmado com sucesso!\n\n"
-                                "Muito obrigado por continuar com a gente. Seu acesso será liberado em instantes.\n\n"
-                                f"📅 Novo vencimento: *{vencimento}*\n\n"
-                                "Qualquer dúvida, estamos à disposição. 😊"
+                                "🤖Mensagem automatica\n\n"
+                                f"Olá, {nome} 👋\n\n"
+                                f"📅 Seu plano vence em {vencimento}.\n\n"
+                                "Segue os dados para pagamentos:\n"
+                                "Nome: Rodrigo Batista dos Santos\n"
+                                "Banco: Mercado Pago\n\n"
+                                "Para renovar, utilize:\n"
+                                f"🔗 Link de pagamento: {payment_link}\n\n"
+                                "Caso ja tenha pago, Desconsidere a mensagem.\n"
+                                "Qualquer dúvida, estamos à disposição! 😊"
                             )
                             zapi_client.send_text(number, mensagem)
                             logger.info("Pagamento order aprovado e processado | numero=%s | order=%s", number, order_id)
