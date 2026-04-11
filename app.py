@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import threading
 import time
-from flask_login import login_required, LoginManager, UserMixin
+from flask_login import login_required, LoginManager, UserMixin, login_user
 
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
@@ -40,6 +40,17 @@ def create_app() -> Flask:
     app = Flask(__name__)
     login_manager.init_app(app)
     # login_manager.login_view = 'login'  # Opcional
+
+    # Configurações seguras para sessão em produção
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+    # Rota para favicon.ico
+    @app.route('/favicon.ico')
+    def favicon():
+        from flask import send_from_directory
+        return send_from_directory('static', 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
     settings = load_settings()
 
@@ -154,8 +165,10 @@ def create_app() -> Flask:
             password = str(request.form.get("password", "")).strip()
 
 
+
             if username == settings.admin_username and password == settings.admin_password:
-                session["authenticated"] = True
+                user = User(username)
+                login_user(user)
                 return redirect(url_for("dashboard"))
 
             error = "Usuario ou senha invalidos"

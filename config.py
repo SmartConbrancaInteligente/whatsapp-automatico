@@ -47,9 +47,9 @@ def load_settings() -> Settings:
         google_spreadsheet_id=os.getenv("GOOGLE_SPREADSHEET_ID", ""),
         google_worksheet_name=os.getenv("GOOGLE_WORKSHEET_NAME", ""),
         google_service_account_file=os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", ""),
-        admin_username=os.getenv("ADMIN_USERNAME", "adm"),
-        admin_password=os.getenv("ADMIN_PASSWORD", "123455"),
-        flask_secret_key=os.getenv("FLASK_SECRET_KEY", "trocar-esta-chave-em-producao"),
+        admin_username=os.getenv("ADMIN_USERNAME", "admin"),
+        admin_password=os.getenv("ADMIN_PASSWORD", "R4L0J0ro!!"),
+        flask_secret_key=os.getenv("FLASK_SECRET_KEY", "R4L0J0ro!!149140"),
         mp_webhook_secret=os.getenv("MP_WEBHOOK_SECRET", ""),
         database_url=os.getenv("DATABASE_URL", ""),
     )

@@ -214,21 +214,7 @@ class BillingService:
             status_code = self.zapi_client.send_text(number, message)
             return status_code in (200, 201)
 
-        pix_message = (
-            "🤖 MENSAGEM AUTOMÁTICA\n\n"
-            f"Olá, {first_name}! 😊\n\n"
-            f"Seu plano de TV vence hoje, {due_date}.\n"
-            "Rodrigo: Deseja renovar? 📺\n"
-            "Rodrigo: 💳 Dados para renovação:\n"
-            "👤 Rodrigo Batista dos Santos\n"
-            "🏦 Banco Mercado Pago\n\n"
-            "🔑 Chave Pix (copia e cola):\n"
-            f"{self.settings.pix_key}\n\n"
-            "✅ Após a confirmação, seu plano será ativado automaticamente.\n\n"
-            "⚠️ Caso já tenha efetuado o pagamento, por gentileza desconsidere esta mensagem."
-        )
-        status_code = self.zapi_client.send_text(number, pix_message)
-        return status_code in (200, 201)
+     
 
     def get_overdue_clients(self) -> Dict[str, Any]:
         try:
