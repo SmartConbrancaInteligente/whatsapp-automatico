@@ -55,17 +55,17 @@ class DatabaseRepository:
         if self.is_postgres:
             # Convert SQLite placeholders (?) to PostgreSQL placeholders (%s)
             query = query.replace("?", "%s")
-            
             # Handle ON CONFLICT syntax conversion for PostgreSQL
-            # SQLite: ON CONFLICT(column) 
-            # PostgreSQL: ON CONFLICT (column)
             import re
             query = re.sub(r'ON CONFLICT\(', 'ON CONFLICT (', query)
-            
-            # Convert excluded references
             query = query.replace("excluded.", "EXCLUDED.")
-        
-        cursor.execute(query, params)
+        # Decide se deve passar params ou não
+        # Conta quantos placeholders existem
+        has_placeholders = ("?" in query) or ("%s" in query)
+        if has_placeholders:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
 
     def _execute_many(self, cursor, query: str, params_list: list) -> None:
         """Execute many queries with automatic placeholder conversion"""
@@ -379,19 +379,34 @@ class DatabaseRepository:
     def get_latest_payment_status_by_number(self) -> Dict[str, str]:
         with self._connect() as conn:
             cursor = conn.cursor()
-            self._execute(cursor,
-                """
-                SELECT p1.numero, p1.status
-                FROM pagamentos p1
-                INNER JOIN (
-                    SELECT numero, MAX(strftime('%Y-%m-%d %H:%M:%S', substr(data, 7, 4) || '-' || substr(data, 4, 2) || '-' || substr(data, 1, 2) || ' ' || substr(data, 12))) as max_data
-                    FROM pagamentos
-                    WHERE TRIM(numero) != ''
-                    GROUP BY numero
-                ) p2 ON p1.numero = p2.numero AND strftime('%Y-%m-%d %H:%M:%S', substr(p1.data, 7, 4) || '-' || substr(p1.data, 4, 2) || '-' || substr(p1.data, 1, 2) || ' ' || substr(p1.data, 12)) = p2.max_data
-                """,
-                (),
-            )
+            if self.is_postgres:
+                # PostgreSQL: data já está no formato '%d/%m/%Y %H:%M:%S', precisamos converter para timestamp
+                self._execute(cursor,
+                    '''
+                    SELECT p1.numero, p1.status
+                    FROM pagamentos p1
+                    INNER JOIN (
+                        SELECT numero, MAX(TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI:SS')) as max_data
+                        FROM pagamentos
+                        WHERE TRIM(numero) != ''
+                        GROUP BY numero
+                    ) p2 ON p1.numero = p2.numero AND TO_TIMESTAMP(p1.data, 'DD/MM/YYYY HH24:MI:SS') = p2.max_data
+                    ''',
+                )
+            else:
+                # SQLite
+                self._execute(cursor,
+                    """
+                    SELECT p1.numero, p1.status
+                    FROM pagamentos p1
+                    INNER JOIN (
+                        SELECT numero, MAX(strftime('%Y-%m-%d %H:%M:%S', substr(data, 7, 4) || '-' || substr(data, 4, 2) || '-' || substr(data, 1, 2) || ' ' || substr(data, 12))) as max_data
+                        FROM pagamentos
+                        WHERE TRIM(numero) != ''
+                        GROUP BY numero
+                    ) p2 ON p1.numero = p2.numero AND strftime('%Y-%m-%d %H:%M:%S', substr(p1.data, 7, 4) || '-' || substr(p1.data, 4, 2) || '-' || substr(p1.data, 1, 2) || ' ' || substr(p1.data, 12)) = p2.max_data
+                    """,
+                )
             rows = cursor.fetchall()
             return {str(number): str(status) for number, status in rows}
 
