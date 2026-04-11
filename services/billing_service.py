@@ -175,7 +175,29 @@ class BillingService:
         )
 
         if status == "approved":
-            self.update_due_date_after_approved_payment(original_number, current_number, number_overrides)
+            update_result = self.update_due_date_after_approved_payment(original_number, current_number, number_overrides)
+            # Enviar mensagem de confirmação de pagamento
+            # Buscar nome do cliente
+            first_name = "Cliente"
+            try:
+                clients = self._get_combined_clients()
+                for c in clients:
+                    if c.get("numero") == current_number:
+                        first_name = (c.get("nome") or "").split()[0]
+                        break
+            except Exception:
+                pass
+            valor_pago = payment_amount
+            valor_pago_str = f"{valor_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if valor_pago else ""
+            vencimento = update_result.get("new_due_date") or ""
+            mensagem = (
+                f"Olá, *{first_name}*! 🎉\n\n"
+                f"✅ Seu pagamento de R$ {valor_pago_str} foi confirmado com sucesso!\n\n"
+                "Muito obrigado por continuar com a gente. Seu acesso será liberado em instantes.\n\n"
+                f"📅 Novo vencimento: *{vencimento}*\n\n"
+                "Qualquer dúvida, estamos à disposição. 😊"
+            )
+            self.zapi_client.send_text(current_number, mensagem)
 
         return {
             "ok": True,
@@ -346,16 +368,17 @@ class BillingService:
         number: str,
         current_number: Optional[str] = None,
         number_overrides: Optional[Dict[str, str]] = None,
+        send_message: bool = True,
+        amount: Optional[float] = None,
     ) -> Dict[str, Any]:
         if not number:
             return {"ok": False, "message": "Numero nao informado"}
 
         overrides = number_overrides or self._get_number_overrides_cached()
         original_number = self._resolve_original_number(number, overrides)
-        
         if current_number is None:
             current_number = original_number
-        
+
         panel_client = self.repo.get_panel_clients()
         client_data = None
         for client in panel_client:
@@ -383,6 +406,20 @@ class BillingService:
         if client_data:
             self.repo.upsert_panel_client(current_number, client_name, new_due_date, client_login)
         self.repo.upsert_due_date_override(original_number, new_due_date)
+
+        # Enviar mensagem de confirmação de pagamento se solicitado
+        if send_message:
+            first_name = (client_name or "Cliente").split()[0]
+            valor_pago = amount if amount is not None else ""
+            valor_pago_str = f"{valor_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if valor_pago else ""
+            mensagem = (
+                f"Olá, *{first_name}*! 🎉\n\n"
+                f"✅ Seu pagamento de R$ {valor_pago_str} foi confirmado com sucesso!\n\n"
+                "Muito obrigado por continuar com a gente. Seu acesso será liberado em instantes.\n\n"
+                f"📅 Novo vencimento: *{new_due_date}*\n\n"
+                "Qualquer dúvida, estamos à disposição. 😊"
+            )
+            self.zapi_client.send_text(current_number, mensagem)
 
         return {
             "ok": True,

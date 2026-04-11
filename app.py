@@ -458,14 +458,15 @@ def create_app() -> Flask:
         import threading
         payload = request.get_json(silent=True) or {}
         args = request.args.to_dict()
+        headers = dict(request.headers)
         logger.info("MP webhook recebido | args=%s | payload=%s", args, payload)
 
-        def process_webhook(payload, args):
+        def process_webhook(payload, args, headers):
             try:
                 if settings.mp_webhook_secret:
-                    x_signature = request.headers.get("x-signature", "")
-                    x_request_id = request.headers.get("x-request-id", "")
-                    data_id = request.args.get("data.id", "")
+                    x_signature = headers.get("x-signature", "")
+                    x_request_id = headers.get("x-request-id", "")
+                    data_id = args.get("data.id", "")
                     ts, received_hash = "", ""
                     for part in x_signature.split(","):
                         k, _, v = part.strip().partition("=")
@@ -613,7 +614,7 @@ def create_app() -> Flask:
                 pass
 
         # Responde imediatamente ao Mercado Pago
-        threading.Thread(target=process_webhook, args=(payload, args)).start()
+        threading.Thread(target=process_webhook, args=(payload, args, headers)).start()
         return jsonify({"status": "ok"}), 200
 
     @app.route("/enviar-cobrancas", methods=["GET"])
