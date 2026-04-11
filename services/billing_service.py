@@ -407,19 +407,7 @@ class BillingService:
             self.repo.upsert_panel_client(current_number, client_name, new_due_date, client_login)
         self.repo.upsert_due_date_override(original_number, new_due_date)
 
-        # Enviar mensagem de confirmação de pagamento se solicitado
-        if send_message:
-            first_name = (client_name or "Cliente").split()[0]
-            valor_pago = amount if amount is not None else ""
-            valor_pago_str = f"{valor_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if valor_pago else ""
-            mensagem = (
-                f"Olá, *{first_name}*! 🎉\n\n"
-                f"✅ Seu pagamento de R$ {valor_pago_str} foi confirmado com sucesso!\n\n"
-                "Muito obrigado por continuar com a gente. Seu acesso será liberado em instantes.\n\n"
-                f"📅 Novo vencimento: *{new_due_date}*\n\n"
-                "Qualquer dúvida, estamos à disposição. 😊"
-            )
-            self.zapi_client.send_text(current_number, mensagem)
+        # Mensagem de confirmação removida conforme solicitado
 
         return {
             "ok": True,

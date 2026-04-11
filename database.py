@@ -381,14 +381,14 @@ class DatabaseRepository:
             cursor = conn.cursor()
             self._execute(cursor,
                 """
-                SELECT p.numero, p.status
-                FROM pagamentos p
-                JOIN (
-                    SELECT numero, MAX(payment_id) AS max_payment_id
+                SELECT p1.numero, p1.status
+                FROM pagamentos p1
+                INNER JOIN (
+                    SELECT numero, MAX(strftime('%Y-%m-%d %H:%M:%S', substr(data, 7, 4) || '-' || substr(data, 4, 2) || '-' || substr(data, 1, 2) || ' ' || substr(data, 12))) as max_data
                     FROM pagamentos
                     WHERE TRIM(numero) != ''
                     GROUP BY numero
-                ) latest ON p.payment_id = latest.max_payment_id
+                ) p2 ON p1.numero = p2.numero AND strftime('%Y-%m-%d %H:%M:%S', substr(p1.data, 7, 4) || '-' || substr(p1.data, 4, 2) || '-' || substr(p1.data, 1, 2) || ' ' || substr(p1.data, 12)) = p2.max_data
                 """
             )
             rows = cursor.fetchall()
