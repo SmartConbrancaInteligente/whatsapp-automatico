@@ -95,7 +95,8 @@ class DatabaseRepository:
                         numero TEXT,
                         status TEXT,
                         valor REAL,
-                        data TEXT
+                        data TEXT,
+                        data_iso TEXT
                     )
                     """
                 )
@@ -207,7 +208,8 @@ class DatabaseRepository:
                         numero TEXT,
                         status TEXT,
                         valor REAL,
-                        data TEXT
+                        data TEXT,
+                        data_iso TEXT
                     )
                     """
                 )
@@ -334,22 +336,24 @@ class DatabaseRepository:
         status: str,
         amount: float,
     ) -> None:
-        timestamp = self._now_br().strftime("%d/%m/%Y %H:%M:%S")
+        timestamp_br = self._now_br().strftime("%d/%m/%Y %H:%M:%S")
+        timestamp_iso = self._now_br().strftime("%Y-%m-%d %H:%M:%S")
 
         with self._connect() as conn:
             cursor = conn.cursor()
             self._execute(cursor,
                 """
-                INSERT INTO pagamentos (payment_id, external_reference, numero, status, valor, data)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO pagamentos (payment_id, external_reference, numero, status, valor, data, data_iso)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(payment_id) DO UPDATE SET
                     external_reference = excluded.external_reference,
                     numero = excluded.numero,
                     status = excluded.status,
                     valor = excluded.valor,
-                    data = excluded.data
+                    data = excluded.data,
+                    data_iso = excluded.data_iso
                 """,
-                (payment_id, external_reference, number, status, float(amount or 0), timestamp),
+                (payment_id, external_reference, number, status, float(amount or 0), timestamp_br, timestamp_iso),
             )
             conn.commit()
 
@@ -379,34 +383,19 @@ class DatabaseRepository:
     def get_latest_payment_status_by_number(self) -> Dict[str, str]:
         with self._connect() as conn:
             cursor = conn.cursor()
-            if self.is_postgres:
-                # PostgreSQL: data já está no formato '%d/%m/%Y %H:%M:%S', precisamos converter para timestamp
-                self._execute(cursor,
-                    '''
-                    SELECT p1.numero, p1.status
-                    FROM pagamentos p1
-                    INNER JOIN (
-                        SELECT numero, MAX(TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI:SS')) as max_data
-                        FROM pagamentos
-                        WHERE TRIM(numero) != ''
-                        GROUP BY numero
-                    ) p2 ON p1.numero = p2.numero AND TO_TIMESTAMP(p1.data, 'DD/MM/YYYY HH24:MI:SS') = p2.max_data
-                    ''',
-                )
-            else:
-                # SQLite
-                self._execute(cursor,
-                    """
-                    SELECT p1.numero, p1.status
-                    FROM pagamentos p1
-                    INNER JOIN (
-                        SELECT numero, MAX(strftime('%Y-%m-%d %H:%M:%S', substr(data, 7, 4) || '-' || substr(data, 4, 2) || '-' || substr(data, 1, 2) || ' ' || substr(data, 12))) as max_data
-                        FROM pagamentos
-                        WHERE TRIM(numero) != ''
-                        GROUP BY numero
-                    ) p2 ON p1.numero = p2.numero AND strftime('%Y-%m-%d %H:%M:%S', substr(p1.data, 7, 4) || '-' || substr(p1.data, 4, 2) || '-' || substr(p1.data, 1, 2) || ' ' || substr(p1.data, 12)) = p2.max_data
-                    """,
-                )
+            # Usa data_iso para ordenação, que é ISO 8601 e ordena corretamente como string
+            self._execute(cursor,
+                '''
+                SELECT p1.numero, p1.status
+                FROM pagamentos p1
+                INNER JOIN (
+                    SELECT numero, MAX(data_iso) as max_data
+                    FROM pagamentos
+                    WHERE TRIM(numero) != ''
+                    GROUP BY numero
+                ) p2 ON p1.numero = p2.numero AND p1.data_iso = p2.max_data
+                ''',
+            )
             rows = cursor.fetchall()
             return {str(number): str(status) for number, status in rows}
 

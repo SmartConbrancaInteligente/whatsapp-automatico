@@ -439,7 +439,7 @@ class BillingService:
             else:
                 due_date = due_overrides.get(original_number, row_due_date)
 
-            payment_status_raw = latest_payment_map.get(number, "pending")
+            payment_status_raw = str(latest_payment_map.get(number, "pending")).strip().lower()
             payment_status = "pago" if payment_status_raw == "approved" else "nao_pago"
 
             detail = latest_payment_details.get(number)
@@ -458,7 +458,6 @@ class BillingService:
                     "vencimento": due_date,
                     "origem": str(row.get("origem", "painel")),
                     "status_pagamento": payment_status,
-                    "status_pagamento_raw": payment_status_raw,
                 }
             )
 

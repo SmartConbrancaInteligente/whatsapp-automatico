@@ -218,7 +218,6 @@ function renderClientes() {
             <td>${escapeHtml(cliente.vencimento || "-")}</td>
             <td>
                 <span class="badge ${status}">${textoStatus}</span>
-                <small class="status-raw">(${escapeHtml(cliente.status_pagamento_raw)})</small>
             </td>
             <td class="actions-cell">
                 <button class="table-btn" data-action="edit" data-number="${escapeHtml(cliente.numero || "")}">Editar</button>
