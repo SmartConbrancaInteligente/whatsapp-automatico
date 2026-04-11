@@ -389,7 +389,8 @@ class DatabaseRepository:
                     WHERE TRIM(numero) != ''
                     GROUP BY numero
                 ) p2 ON p1.numero = p2.numero AND strftime('%Y-%m-%d %H:%M:%S', substr(p1.data, 7, 4) || '-' || substr(p1.data, 4, 2) || '-' || substr(p1.data, 1, 2) || ' ' || substr(p1.data, 12)) = p2.max_data
-                """
+                """,
+                (),
             )
             rows = cursor.fetchall()
             return {str(number): str(status) for number, status in rows}
