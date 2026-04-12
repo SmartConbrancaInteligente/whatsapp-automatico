@@ -340,7 +340,10 @@ function renderOverdueClients() {
         th.textContent = 'Ações';
         thead.appendChild(th);
     }
+
+    empty.classList.toggle("hidden", state.overdueClients.length > 0);
 }
+
 // Esconde cards de resumo fora da aba Clientes
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -353,9 +356,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         }, 50);
     });
 });
-
-    empty.classList.toggle("hidden", state.overdueClients.length > 0);
-}
 
 async function carregarExecucoesDisparo() {
     const data = await apiJson("/api/disparos/execucoes");
