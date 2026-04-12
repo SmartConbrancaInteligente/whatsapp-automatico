@@ -206,6 +206,10 @@ class BillingService:
         }
 
     def _send_charge_to_client(self, number: str, name: str, due_date: str) -> bool:
+        # Não envia cobrança se cliente estiver oculto (pausado)
+        hidden_numbers = self.repo.get_hidden_client_numbers()
+        if number in hidden_numbers:
+            return False
         first_name = name.split()[0] if name.split() else name
         fixed_payment_link = str(self.settings.payment_link or "https://link.mercadopago.com.br/assinaturatvrodrigo").strip()
 
@@ -284,6 +288,8 @@ class BillingService:
         return {"ok": True, "status_code": 200, "clientes": overdue_clients}
 
     def send_manual_charges(self, numbers: Optional[list[str]] = None, early_payment: bool = False) -> Dict[str, Any]:
+        # Não envia para clientes ocultos (pausados)
+        hidden_numbers = self.repo.get_hidden_client_numbers()
         overdue_result = self.get_overdue_clients()
         if not overdue_result["ok"]:
             return overdue_result
@@ -299,6 +305,9 @@ class BillingService:
             number = client["numero"]
             nome = client["nome"]
             vencimento = client["vencimento"]
+            if number in hidden_numbers:
+                skipped_interaction += 1
+                continue
             if self.repo.has_interacted_today(number):
                 skipped_interaction += 1
                 continue
@@ -429,6 +438,7 @@ class BillingService:
         total_paid = 0.0
         total_pending = 0.0
 
+        hidden_numbers = self.repo.get_hidden_client_numbers()
         for row in rows:
             number = str(row.get("numero", "")).strip()
             original_number = str(row.get("numero_original", number)).strip()
@@ -458,6 +468,7 @@ class BillingService:
                     "vencimento": due_date,
                     "origem": str(row.get("origem", "painel")),
                     "status_pagamento": payment_status,
+                    "pausado": number in hidden_numbers,
                 }
             )
 

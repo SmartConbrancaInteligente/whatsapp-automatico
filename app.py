@@ -37,6 +37,17 @@ _scheduler_started = False
 
 
 def create_app() -> Flask:
+        @app.route("/api/clientes/<numero>/pausar", methods=["POST"])
+        @login_required
+        def pausar_cliente(numero):
+            repo.hide_client(numero)
+            return jsonify({"status": "ok", "mensagem": f"Cliente {numero} pausado com sucesso."})
+
+        @app.route("/api/clientes/<numero>/despausar", methods=["POST"])
+        @login_required
+        def despausar_cliente(numero):
+            repo.unhide_client(numero)
+            return jsonify({"status": "ok", "mensagem": f"Cliente {numero} despausado com sucesso."})
     app = Flask(__name__)
     login_manager.init_app(app)
     # login_manager.login_view = 'login'  # Opcional
@@ -352,23 +363,26 @@ def create_app() -> Flask:
         except (TypeError, ValueError):
             return jsonify({"erro": "Valor invalido"}), 400
 
+        import uuid
+        # Gera external_reference único para cada cobrança manual
+        manual_external_reference = str(uuid.uuid4())
         repo.upsert_charge(
-            external_reference=external_reference,
+            external_reference=manual_external_reference,
             number=number,
             name=name,
             amount=amount,
             status="approved",
             payment_link="teste-manual",
         )
-        repo.save_payment(payment_id, external_reference, number, "approved", amount)
-        repo.update_charge_status(external_reference, "approved", payment_id)
+        repo.save_payment(payment_id, manual_external_reference, number, "approved", amount)
+        repo.update_charge_status(manual_external_reference, "approved", payment_id)
 
         update_result = billing_service.update_due_date_after_approved_payment(number)
         if not update_result["ok"]:
             return jsonify({
                 "erro": update_result["message"],
                 "payment_id": payment_id,
-                "external_reference": external_reference,
+                "external_reference": manual_external_reference,
             }), 400
 
         whatsapp_status = None
@@ -382,7 +396,7 @@ def create_app() -> Flask:
             {
                 "status": "ok",
                 "payment_id": payment_id,
-                "external_reference": external_reference,
+                "external_reference": manual_external_reference,
                 "numero": number,
                 "novo_vencimento": update_result["new_due_date"],
                 "updated_remote": update_result["updated_remote"],

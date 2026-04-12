@@ -147,6 +147,38 @@ async function carregarClientes() {
         document.getElementById("saldoRecebido").textContent = formatCurrency(resumo.total_recebido || 0);
         document.getElementById("saldoPendente").textContent = formatCurrency(resumo.total_pendente || 0);
         document.getElementById("saldoLiquido").textContent = formatCurrency(resumo.saldo_liquido || 0);
+        atualizarGraficoPagamentos(pagos, naoPagos, clientes.length);
+
+    } catch (err) {
+    // Chart.js - Gráfico de pagamentos
+    let graficoPagamentos = null;
+    function atualizarGraficoPagamentos(pagos, pendentes, total) {
+        const ctx = document.getElementById("graficoPagamentos").getContext("2d");
+        if (!graficoPagamentos) {
+            graficoPagamentos = new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels: ["Pagos", "Pendentes"],
+                    datasets: [{
+                        data: [pagos, pendentes],
+                        backgroundColor: ["#4caf50", "#f44336"],
+                        borderWidth: 1,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: "bottom" },
+                        title: { display: true, text: `Pagamentos dos Clientes (Total: ${total})` },
+                    },
+                },
+            });
+        } else {
+            graficoPagamentos.data.datasets[0].data = [pagos, pendentes];
+            graficoPagamentos.options.plugins.title.text = `Pagamentos dos Clientes (Total: ${total})`;
+            graficoPagamentos.update();
+        }
+    }
     } catch (err) {
         emptyState.textContent = err.message || "Erro ao carregar clientes.";
         emptyState.classList.remove("hidden");
@@ -204,6 +236,9 @@ function renderClientes() {
         const textoBotaoStatus = status === "pago" ? "Marcar nao pago" : "Marcar pago";
         const originalNumber = cliente.numero_original || cliente.numero || "";
         const textoStatus = status === "pago" ? "Pago" : "Não pago";
+        const pausado = !!cliente.pausado; // novo campo esperado do backend
+        const textoBotaoPausar = pausado ? "Despausar disparos" : "Pausar disparos";
+        const acaoPausar = pausado ? "despausar" : "pausar";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -222,6 +257,7 @@ function renderClientes() {
             <td class="actions-cell">
                 <button class="table-btn" data-action="edit" data-number="${escapeHtml(cliente.numero || "")}">Editar</button>
                 <button class="table-btn payment-toggle ${status}" data-action="toggle-payment" data-number="${escapeHtml(cliente.numero || "")}" data-original="${escapeHtml(originalNumber)}" data-status="${escapeHtml(proximoStatus)}">${escapeHtml(textoBotaoStatus)}</button>
+                <button class="table-btn ${pausado ? "success" : "warning"}" data-action="${acaoPausar}" data-number="${escapeHtml(cliente.numero || "")}">${textoBotaoPausar}</button>
                 <button class="table-btn danger" data-action="delete" data-number="${escapeHtml(cliente.numero || "")}">Remover</button>
             </td>
         `;
@@ -534,7 +570,7 @@ function initClientActions() {
     document.getElementById("clienteForm").addEventListener("submit", salvarCliente);
     document.getElementById("cancelEditBtn").addEventListener("click", resetClientForm);
     document.getElementById("syncPaymentsBtn").addEventListener("click", sincronizarPagamentos);
-    document.getElementById("clientesTbody").addEventListener("click", (event) => {
+    document.getElementById("clientesTbody").addEventListener("click", async (event) => {
         const button = event.target.closest("button[data-action]");
         if (!button) {
             return;
@@ -553,6 +589,18 @@ function initClientActions() {
 
         if (action === "delete") {
             removerCliente(number);
+            return;
+        }
+
+        if (action === "pausar" || action === "despausar") {
+            try {
+                const url = `/api/clientes/${number}/${action}`;
+                await apiJson(url, { method: "POST" });
+                showMessage(action === "pausar" ? "Disparos pausados para o cliente." : "Disparos reativados para o cliente.", "success");
+                await carregarClientes();
+            } catch (err) {
+                showMessage(err.message || "Erro ao atualizar disparo do cliente.", "danger");
+            }
         }
     });
 }
