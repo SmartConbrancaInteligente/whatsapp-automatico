@@ -37,19 +37,20 @@ _scheduler_started = False
 
 
 def create_app() -> Flask:
-        @app.route("/api/clientes/<numero>/pausar", methods=["POST"])
-        @login_required
-        def pausar_cliente(numero):
-            repo.hide_client(numero)
-            return jsonify({"status": "ok", "mensagem": f"Cliente {numero} pausado com sucesso."})
-
-        @app.route("/api/clientes/<numero>/despausar", methods=["POST"])
-        @login_required
-        def despausar_cliente(numero):
-            repo.unhide_client(numero)
-            return jsonify({"status": "ok", "mensagem": f"Cliente {numero} despausado com sucesso."})
     app = Flask(__name__)
     login_manager.init_app(app)
+
+    @app.route("/api/clientes/<numero>/pausar", methods=["POST"])
+    @login_required
+    def pausar_cliente(numero):
+        repo.hide_client(numero)
+        return jsonify({"status": "ok", "mensagem": f"Cliente {numero} pausado com sucesso."})
+
+    @app.route("/api/clientes/<numero>/despausar", methods=["POST"])
+    @login_required
+    def despausar_cliente(numero):
+        repo.unhide_client(numero)
+        return jsonify({"status": "ok", "mensagem": f"Cliente {numero} despausado com sucesso."})
     # login_manager.login_view = 'login'  # Opcional
 
     # Configurações seguras para sessão em produção
