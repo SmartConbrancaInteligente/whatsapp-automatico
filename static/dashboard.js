@@ -240,10 +240,7 @@ function renderClientes() {
         const textoBotaoStatus = status === "pago" ? "Marcar nao pago" : "Marcar pago";
         const originalNumber = cliente.numero_original || cliente.numero || "";
         const textoStatus = status === "pago" ? "Pago" : "Não pago";
-        const pausado = !!cliente.pausado; // novo campo esperado do backend
-        const textoBotaoPausar = pausado ? "Despausar disparos" : "Pausar disparos";
-        const acaoPausar = pausado ? "despausar" : "pausar";
-
+        // Removido botão pausar disparos da aba Clientes
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>
@@ -261,7 +258,6 @@ function renderClientes() {
             <td class="actions-cell">
                 <button class="table-btn" data-action="edit" data-number="${escapeHtml(cliente.numero || "")}">Editar</button>
                 <button class="table-btn payment-toggle ${status}" data-action="toggle-payment" data-number="${escapeHtml(cliente.numero || "")}" data-original="${escapeHtml(originalNumber)}" data-status="${escapeHtml(proximoStatus)}">${escapeHtml(textoBotaoStatus)}</button>
-                <button class="table-btn ${pausado ? "success" : "warning"}" data-action="${acaoPausar}" data-number="${escapeHtml(cliente.numero || "")}">${textoBotaoPausar}</button>
                 <button class="table-btn danger" data-action="delete" data-number="${escapeHtml(cliente.numero || "")}">Remover</button>
             </td>
         `;
@@ -346,7 +342,11 @@ function renderOverdueClients() {
     selectAll.checked = false;
 
     state.overdueClients.forEach((cliente) => {
+        // Só exibe botão pausar disparos para clientes vencidos (em atraso)
         const tr = document.createElement("tr");
+        const pausado = !!cliente.pausado;
+        const textoBotaoPausar = pausado ? "Despausar disparos" : "Pausar disparos";
+        const acaoPausar = pausado ? "despausar" : "pausar";
         tr.innerHTML = `
             <td><input class="overdue-checkbox" type="checkbox" value="${escapeHtml(cliente.numero)}" /></td>
             <td>${escapeHtml(cliente.nome || "Cliente")}</td>
@@ -354,9 +354,32 @@ function renderOverdueClients() {
             <td>${escapeHtml(cliente.vencimento || "-")}</td>
             <td>${escapeHtml(cliente.dias_atraso)}</td>
             <td><span class="overdue-origin">${escapeHtml(cliente.origem || "painel")}</span></td>
+            <td>
+                <button class="table-btn ${pausado ? "success" : "warning"}" data-action="${acaoPausar}" data-number="${escapeHtml(cliente.numero || "")}">${textoBotaoPausar}</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
+    // Adiciona cabeçalho para o botão se necessário
+    const thead = tbody.parentElement.querySelector('thead tr');
+    if (thead && thead.children.length < 7) {
+        const th = document.createElement('th');
+        th.textContent = 'Ações';
+        thead.appendChild(th);
+    }
+}
+// Esconde cards de resumo fora da aba Clientes
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        setTimeout(() => {
+            const tab = document.querySelector('.tab-content.active');
+            const cards = document.getElementById('cardsResumo');
+            if (cards) {
+                cards.style.display = tab && tab.id === 'clientes-tab' ? '' : 'none';
+            }
+        }, 50);
+    });
+});
 
     empty.classList.toggle("hidden", state.overdueClients.length > 0);
 }
