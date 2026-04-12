@@ -14,12 +14,16 @@
     <div class="bg-shape bg-shape-2"></div>
 
     <main class="container">
+        <!-- Mensagem de status para feedback do usuário -->
+        <div id="statusMessage" class="status-message hidden"></div>
         <header class="header">
             <div>
                 <h1>Painel de Controle</h1>
                 <p>Monitoramento de clientes e cobrancas em tempo real</p>
             </div>
             <div class="header-actions">
+                <!-- Exemplo de avatar com fallback -->
+                <img src="https://en.gravatar.com/avatar/00000000000000000000000000000000" alt="Avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;vertical-align:middle;" onerror="this.onerror=null;this.src='/static/default-avatar.png';">
                 <button id="refreshBtn">Atualizar</button>
                 <a class="logout-btn" href="/logout">Sair</a>
             </div>
@@ -67,8 +71,6 @@
                     <button id="cancelEditBtn" class="secondary-btn hidden" type="button">Cancelar</button>
                 </div>
             </form>
-
-            <p id="statusMessage" class="status-message hidden"></p>
         </section>
 
         <section class="cards">
@@ -239,6 +241,8 @@
             <!-- Bloco de envio manual de link de pagamento removido conforme solicitado -->
         </section>
     </main>
+    <!-- Remover scripts Apollo Client se existirem -->
+    <!-- <script src="https://unpkg.com/@apollo/client@latest/..." defer></script> -->
 
     <script src="/static/dashboard.js"></script>
 </body>
