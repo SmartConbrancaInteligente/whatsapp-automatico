@@ -101,7 +101,7 @@
         </section>
 
         <section class="chart-section">
-            <canvas id="graficoPagamentos" width="250" height="120"></canvas>
+            <canvas id="graficoPagamentos" width="160" height="70"></canvas>
         </section>
             <!-- Chart.js CDN -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -245,5 +245,21 @@
     <!-- <script src="https://unpkg.com/@apollo/client@latest/..." defer></script> -->
 
     <script src="/static/dashboard.js"></script>
+    <script>
+    // Exibe cards de clientes só na aba Clientes
+    document.addEventListener('DOMContentLoaded', function() {
+        function updateCardsVisibility() {
+            const tab = document.querySelector('.tab-content.active');
+            const cards = document.getElementById('cardsResumo');
+            if (cards) {
+                cards.style.display = tab && tab.id === 'clientes-tab' ? '' : 'none';
+            }
+        }
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => setTimeout(updateCardsVisibility, 50));
+        });
+        updateCardsVisibility();
+    });
+    </script>
 </body>
 </html>
