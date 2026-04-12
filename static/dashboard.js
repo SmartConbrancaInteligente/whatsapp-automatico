@@ -13,7 +13,12 @@ async function apiJson(url, options = {}) {
         ...options,
     };
     const response = await fetch(url, fetchOptions);
-    const data = await response.json().catch(() => ({}));
+    let data = {};
+    try {
+        data = await response.json();
+    } catch {
+        data = {};
+    }
 
     if (response.status === 401) {
         window.location.href = "/login";
