@@ -153,40 +153,39 @@ async function carregarClientes() {
         document.getElementById("saldoPendente").textContent = formatCurrency(resumo.total_pendente || 0);
         document.getElementById("saldoLiquido").textContent = formatCurrency(resumo.saldo_liquido || 0);
         atualizarGraficoPagamentos(pagos, naoPagos, clientes.length);
-
-    } catch (err) {
-    // Chart.js - Gráfico de pagamentos
-    let graficoPagamentos = null;
-    function atualizarGraficoPagamentos(pagos, pendentes, total) {
-        const ctx = document.getElementById("graficoPagamentos").getContext("2d");
-        if (!graficoPagamentos) {
-            graficoPagamentos = new Chart(ctx, {
-                type: "doughnut",
-                data: {
-                    labels: ["Pagos", "Pendentes"],
-                    datasets: [{
-                        data: [pagos, pendentes],
-                        backgroundColor: ["#4caf50", "#f44336"],
-                        borderWidth: 1,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: "bottom" },
-                        title: { display: true, text: `Pagamentos dos Clientes (Total: ${total})` },
-                    },
-                },
-            });
-        } else {
-            graficoPagamentos.data.datasets[0].data = [pagos, pendentes];
-            graficoPagamentos.options.plugins.title.text = `Pagamentos dos Clientes (Total: ${total})`;
-            graficoPagamentos.update();
-        }
-    }
     } catch (err) {
         emptyState.textContent = err.message || "Erro ao carregar clientes.";
         emptyState.classList.remove("hidden");
+    }
+}
+
+// Chart.js - Gráfico de pagamentos
+let graficoPagamentos = null;
+function atualizarGraficoPagamentos(pagos, pendentes, total) {
+    const ctx = document.getElementById("graficoPagamentos").getContext("2d");
+    if (!graficoPagamentos) {
+        graficoPagamentos = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: ["Pagos", "Pendentes"],
+                datasets: [{
+                    data: [pagos, pendentes],
+                    backgroundColor: ["#4caf50", "#f44336"],
+                    borderWidth: 1,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: "bottom" },
+                    title: { display: true, text: `Pagamentos dos Clientes (Total: ${total})` },
+                },
+            },
+        });
+    } else {
+        graficoPagamentos.data.datasets[0].data = [pagos, pendentes];
+        graficoPagamentos.options.plugins.title.text = `Pagamentos dos Clientes (Total: ${total})`;
+        graficoPagamentos.update();
     }
 }
 
