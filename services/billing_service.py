@@ -84,34 +84,33 @@ class BillingService:
         # 1. metadata
         metadata = payment.get("metadata") or {}
         number = str(metadata.get("numero", "")).strip()
-        if number:
-            return number
-
-        # 2. external_reference
         external_reference = str(payment.get("external_reference", "")).strip()
-        if external_reference:
-            number = self.repo.get_number_by_external_reference(external_reference) or ""
-            if number:
-                return number
+        found_number = None
+        if number:
+            found_number = number
+        elif external_reference:
+            found_number = self.repo.get_number_by_external_reference(external_reference) or ""
+        else:
+            payer = payment.get("payer") or {}
+            phone = payer.get("phone") or {}
+            area_code = str(phone.get("area_code", "")).strip().lstrip("0")
+            phone_number = str(phone.get("number", "")).strip().replace("-", "").replace(" ", "")
+            if area_code and phone_number:
+                panel_numbers = {str(c.get("numero", "")).strip() for c in self.repo.get_panel_clients()}
+                candidate = f"55{area_code}{phone_number}"
+                if candidate in panel_numbers:
+                    found_number = candidate
+                else:
+                    alt = f"{area_code}{phone_number}"
+                    for pn in panel_numbers:
+                        if pn.endswith(alt):
+                            found_number = pn
+                            break
 
-        # 3. payer phone (PIX direct payments)
-        payer = payment.get("payer") or {}
-        phone = payer.get("phone") or {}
-        area_code = str(phone.get("area_code", "")).strip().lstrip("0")
-        phone_number = str(phone.get("number", "")).strip().replace("-", "").replace(" ", "")
-
-        if area_code and phone_number:
-            panel_numbers = {str(c.get("numero", "")).strip() for c in self.repo.get_panel_clients()}
-            candidate = f"55{area_code}{phone_number}"
-            if candidate in panel_numbers:
-                return candidate
-            # Fallback: bare area_code+number (some stores omit country code)
-            alt = f"{area_code}{phone_number}"
-            for pn in panel_numbers:
-                if pn.endswith(alt):
-                    return pn
-
-        return ""
+        logger.info(f"Extraindo número do pagamento: metadata={metadata.get('numero')}, external_reference={external_reference}, extraído={found_number}")
+        if not found_number:
+            logger.warning(f"Não foi possível extrair o número do cliente do pagamento: {payment}")
+        return found_number or ""
 
     def _resolve_original_number(self, number: str, number_overrides: Optional[Dict[str, str]] = None) -> str:
         if not number:
