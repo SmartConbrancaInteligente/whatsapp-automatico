@@ -209,31 +209,22 @@ class BillingService:
 
     def _send_charge_to_client(self, number: str, name: str, due_date: str) -> bool:
         first_name = name.split()[0] if name.split() else name
-        # Verifica se já existe uma cobrança pendente para este número
+        # Sempre usa o link aberto do Mercado Pago
+        link_to_send = self.settings.payment_link or "https://link.mercadopago.com.br/assinaturatvrodrigo"
+
+        # Lança uma cobrança pendente na tabela, se não houver
         latest_charge = self.repo.get_latest_charge_by_number(number)
-        if latest_charge and latest_charge.get("status") == "pending":
-            link_to_send = latest_charge.get("payment_link", "")
-        else:
-            # Cria uma nova cobrança pendente
-            description = f"Renovacao de plano - {due_date}"
-            amount = float(self.settings.default_charge_amount)
-            preference, error = self.mp_client.create_checkout_preference(
-                amount=amount,
-                description=description,
-                number=number,
-            )
-            if error or not preference:
-                logger.warning(f"Falha ao criar cobrança automática: {error}")
-                return False
+        if not (latest_charge and latest_charge.get("status") == "pending"):
+            import uuid
+            external_reference = str(uuid.uuid4())
             self.repo.upsert_charge(
-                external_reference=str(preference["external_reference"]),
+                external_reference=external_reference,
                 number=number,
                 name=name,
-                amount=amount,
+                amount=0.0,
                 status="pending",
-                payment_link=str(preference["init_point"]),
+                payment_link=link_to_send,
             )
-            link_to_send = str(preference["init_point"])
 
         if link_to_send:
             message = (
