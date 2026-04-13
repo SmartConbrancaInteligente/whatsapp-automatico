@@ -209,17 +209,31 @@ class BillingService:
 
     def _send_charge_to_client(self, number: str, name: str, due_date: str) -> bool:
         first_name = name.split()[0] if name.split() else name
-        fixed_payment_link = str(self.settings.payment_link or "https://link.mercadopago.com.br/assinaturatvrodrigo").strip()
-
-        if fixed_payment_link:
-            link_to_send = fixed_payment_link
+        # Verifica se já existe uma cobrança pendente para este número
+        latest_charge = self.repo.get_latest_charge_by_number(number)
+        if latest_charge and latest_charge.get("status") == "pending":
+            link_to_send = latest_charge.get("payment_link", "")
         else:
-            latest_charge = self.repo.get_latest_charge_by_number(number)
-            link_to_send = (
-                latest_charge.get("payment_link", "")
-                if latest_charge and latest_charge.get("status") == "pending"
-                else ""
+            # Cria uma nova cobrança pendente
+            description = f"Renovacao de plano - {due_date}"
+            amount = float(self.settings.default_charge_amount)
+            preference, error = self.mp_client.create_checkout_preference(
+                amount=amount,
+                description=description,
+                number=number,
             )
+            if error or not preference:
+                logger.warning(f"Falha ao criar cobrança automática: {error}")
+                return False
+            self.repo.upsert_charge(
+                external_reference=str(preference["external_reference"]),
+                number=number,
+                name=name,
+                amount=amount,
+                status="pending",
+                payment_link=str(preference["init_point"]),
+            )
+            link_to_send = str(preference["init_point"])
 
         if link_to_send:
             message = (
@@ -237,6 +251,7 @@ class BillingService:
             )
             status_code = self.zapi_client.send_text(number, message)
             return status_code in (200, 201)
+        return False
 
      
 
